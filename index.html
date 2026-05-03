@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Done by Di — Social Media Hub</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0D1B2A; --navy-mid: #152436; --navy-light: #1E3045;
+  --teal: #1B9AAA; --teal-light: #22B8CB; --teal-dim: rgba(27,154,170,0.15);
+  --gold: #C9A84C; --gold-light: #E2C06A; --gold-dim: rgba(201,168,76,0.15);
+  --white: #F5F7FA; --muted: rgba(245,247,250,0.5); --border: rgba(27,154,170,0.2);
+  --card: rgba(21,36,54,0.85);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 80% 10%,rgba(27,154,170,0.08),transparent 70%),radial-gradient(ellipse 40% 50% at 5% 90%,rgba(201,168,76,0.06),transparent 60%),repeating-linear-gradient(0deg,transparent,transparent 79px,rgba(27,154,170,0.03) 80px),repeating-linear-gradient(90deg,transparent,transparent 79px,rgba(27,154,170,0.03) 80px);pointer-events:none;z-index:0}
+
+/* ── LOGIN ── */
+#login-screen{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:var(--navy)}
+#login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 40%,rgba(27,154,170,0.1),transparent 70%);pointer-events:none}
+.login-box{position:relative;width:380px;max-width:94vw;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2.5rem;text-align:center;backdrop-filter:blur(12px)}
+.login-logo-mark{width:52px;height:52px;background:linear-gradient(135deg,var(--teal),var(--gold));border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--navy);margin:0 auto 1rem}
+.login-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--muted);letter-spacing:0.08em;margin-bottom:2rem}
+
+.login-input{width:100%;background:var(--navy-light);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--white);outline:none;margin-bottom:1rem;transition:border-color 0.2s}
+.login-input:focus{border-color:var(--teal)}
+.login-btn{width:100%;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:var(--navy)}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(27,154,170,0.3)}
+.login-err{font-size:12px;color:#E8698D;margin-top:8px;display:none}
+#app{display:none;position:relative;z-index:1}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:100;background:rgba(13,27,42,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--teal),var(--gold));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--navy)}
+.logo-text{font-family:'Playfair Display',serif;font-size:15px;font-weight:700}
+.logo-sub{font-size:10px;font-weight:300;color:var(--teal-light);letter-spacing:0.15em;text-transform:uppercase}
+.header-right{display:flex;align-items:center;gap:12px}
+.user-badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:default}
+.badge-di{background:var(--teal-dim);border:1px solid var(--teal);color:var(--teal-light)}
+.badge-cat{background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold-light)}
+.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;font-family:'DM Sans',sans-serif}
+.btn-teal{background:var(--teal);color:var(--navy)}.btn-teal:hover{background:var(--teal-light);transform:translateY(-1px)}
+.btn-gold{background:var(--gold);color:var(--navy)}.btn-gold:hover{background:var(--gold-light);transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-ghost:hover{color:var(--white);border-color:var(--teal)}
+.btn-sm{padding:5px 12px;font-size:11px}
+.btn-danger{background:rgba(232,105,141,0.15);color:#E8698D;border:1px solid rgba(232,105,141,0.3)}.btn-danger:hover{background:rgba(232,105,141,0.25)}
+
+/* ── TABS ── */
+.tab-bar{position:sticky;top:64px;z-index:90;background:rgba(13,27,42,0.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;padding:0 2rem;overflow-x:auto}
+.tab{padding:14px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap}
+.tab:hover{color:var(--white)}
+.tab.active{color:var(--teal-light);border-bottom-color:var(--teal)}
+.badge-count{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;background:var(--gold);color:var(--navy);margin-left:6px}
+
+/* ── MAIN ── */
+main{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:2rem}
+.view{display:none}.view.active{display:block}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.5rem}
+.section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700}
+.section-sub{font-size:12px;color:var(--muted);margin-top:2px;letter-spacing:0.05em}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;backdrop-filter:blur(8px)}
+
+/* ── STATS ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-bottom:1.5rem}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.5rem;backdrop-filter:blur(8px)}
+.stat-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:8px}
+.stat-value{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;line-height:1}
+.stat-note{font-size:11px;color:var(--muted);margin-top:4px}
+.two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:1.25rem}
+
+/* ── POSTS ── */
+.post-list{display:flex;flex-direction:column;gap:10px}
+.post-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:10px;border:1px solid var(--border);background:rgba(21,36,54,0.5);transition:all 0.2s}
+.post-item:hover{border-color:rgba(27,154,170,0.4);background:var(--navy-light)}
+.post-date-badge{min-width:40px;text-align:center;background:var(--teal-dim);border:1px solid var(--teal);border-radius:8px;padding:4px}
+.post-date-day{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--teal-light);line-height:1}
+.post-date-mo{font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal)}
+.post-info{flex:1}
+.post-title{font-size:13px;font-weight:600;color:var(--white);margin-bottom:3px}
+.post-meta{font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.post-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.plat{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase}
+.plat-fb{background:rgba(66,103,178,0.2);color:#6893D4;border:1px solid rgba(66,103,178,0.3)}
+.plat-ig{background:rgba(225,48,108,0.12);color:#E8698D;border:1px solid rgba(225,48,108,0.2)}
+.plat-li{background:rgba(10,102,194,0.15);color:#5BA6D6;border:1px solid rgba(10,102,194,0.25)}
+.plat-th{background:rgba(255,255,255,0.05);color:#AAA;border:1px solid rgba(255,255,255,0.1)}
+.assign-di{background:var(--teal-dim);color:var(--teal-light);padding:2px 8px;border-radius:4px;font-size:11px}
+.assign-cat{background:var(--gold-dim);color:var(--gold-light);padding:2px 8px;border-radius:4px;font-size:11px}
+.status-pill{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:600;letter-spacing:0.04em;cursor:pointer}
+.status-draft{background:rgba(100,100,120,0.2);color:#888;border:1px solid rgba(100,100,120,0.2)}
+.status-ready{background:var(--teal-dim);color:var(--teal-light);border:1px solid rgba(27,154,170,0.3)}
+.status-published{background:rgba(80,200,120,0.12);color:#6DD68A;border:1px solid rgba(80,200,120,0.2)}
+
+/* ── CALENDAR ── */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem}
+.cal-nav{display:flex;align-items:center;gap:12px}
+.cal-month{font-family:'Playfair Display',serif;font-size:18px;font-weight:700}
+.cal-nav-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.2s}
+.cal-nav-btn:hover{border-color:var(--teal);color:var(--teal-light)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day-label{text-align:center;font-size:10px;font-weight:600;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;padding:4px 0 8px}
+.cal-day{aspect-ratio:1;border-radius:8px;border:1px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 2px;cursor:pointer;transition:all 0.15s;font-size:12px;font-weight:500;color:var(--white)}
+.cal-day:hover{background:var(--navy-light);border-color:var(--border)}
+.cal-day.empty{cursor:default}
+.cal-day.today{background:var(--teal-dim);border-color:var(--teal);color:var(--teal-light);font-weight:700}
+.cal-day.has-post::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--gold);margin-top:2px}
+.cal-day.selected{background:var(--navy-light);border-color:var(--gold)}
+
+/* ── CHECKLIST ── */
+.cl-section-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.cl-section-label::after{content:'';flex:1;height:1px;background:currentColor;opacity:0.15}
+.cl-items{display:flex;flex-direction:column;gap:8px}
+.cl-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(21,36,54,0.4);transition:all 0.2s;cursor:pointer}
+.cl-item:hover{border-color:rgba(27,154,170,0.3)}
+.cl-item.done{opacity:0.45;border-color:transparent}
+.cl-checkbox{width:18px;height:18px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.cl-item.done .cl-checkbox{background:var(--teal);border-color:var(--teal)}
+.cl-item.done .cl-checkbox::after{content:'✓';font-size:11px;color:var(--navy);font-weight:700}
+.cl-text{flex:1}
+.cl-title{font-size:13px;font-weight:500;color:var(--white)}
+.cl-item.done .cl-title{text-decoration:line-through;color:var(--muted)}
+.cl-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.cl-add{display:flex;gap:8px;padding:10px 14px;border-radius:10px;border:1px dashed var(--border);background:transparent;align-items:center;cursor:pointer;transition:all 0.2s;margin-top:6px;color:var(--muted);font-size:12px;font-family:'DM Sans',sans-serif;width:100%}
+.cl-add:hover{border-color:var(--teal);color:var(--teal-light)}
+.progress-bar{height:5px;background:var(--navy-light);border-radius:3px;overflow:hidden;margin-top:10px}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--teal),var(--teal-light));transition:width 0.5s ease}
+.progress-label{font-size:11px;color:var(--muted);margin-top:5px}
+
+/* ── CANVA ── */
+.canva-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.canva-card{border-radius:12px;border:1px solid var(--border);overflow:hidden;background:var(--card);transition:all 0.2s;cursor:pointer}
+.canva-card:hover{border-color:var(--teal);transform:translateY(-3px)}
+.canva-thumb{height:110px;display:flex;align-items:center;justify-content:center;font-size:30px}
+.canva-info{padding:12px}
+.canva-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.canva-meta{font-size:11px;color:var(--muted)}
+.canva-actions{display:flex;gap:6px;margin-top:8px;align-items:center}
+.canva-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--teal-light);text-decoration:none;transition:color 0.2s}
+.canva-link:hover{color:var(--gold)}
+
+/* ── NOTES ── */
+.note-list{display:flex;flex-direction:column;gap:8px}
+.note-item{padding:10px 14px;border-radius:8px;border-left:3px solid;background:rgba(21,36,54,0.5);font-size:12px;line-height:1.5;position:relative}
+.note-item.teal{border-color:var(--teal)}.note-item.gold{border-color:var(--gold)}
+.note-tag{font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px;opacity:0.7}
+.note-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;opacity:0;transition:opacity 0.2s}
+.note-item:hover .note-del{opacity:1}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--navy-mid);border:1px solid var(--border);border-radius:16px;padding:2rem;width:520px;max-width:94vw;max-height:90vh;overflow-y:auto;animation:slideUp 0.25s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:1.5rem}
+.form-row{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--teal-light);margin-bottom:6px}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--navy-light);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--white);outline:none;transition:border-color 0.2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--teal)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-select option{background:var(--navy)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--border)}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--navy-mid);border:1px solid var(--teal);border-radius:10px;padding:12px 20px;font-size:13px;color:var(--teal-light);z-index:999;opacity:0;transform:translateY(10px);transition:all 0.3s;pointer-events:none}
+#toast.show{opacity:1;transform:translateY(0)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){.dash-grid{grid-template-columns:1fr 1fr}.two-col{grid-template-columns:1fr}.canva-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.dash-grid{grid-template-columns:1fr}.canva-grid{grid-template-columns:1fr}main{padding:1rem}}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo-mark">D</div>
+    <div class="login-title">Social Media Hub</div>
+    <div class="login-sub">Done by Di · Internal Portal</div>
+
+    <!-- Step 1: Password -->
+    <div id="step-pw">
+      <input class="login-input" type="password" id="pw-input" placeholder="Enter shared password" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="login-btn" onclick="doLogin()">Continue →</button>
+      <div class="login-err" id="login-err">Incorrect password. Try again.</div>
+    </div>
+
+    <!-- Step 2: Who are you -->
+    <div id="step-who" style="display:none">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:1rem">Who's logging in?</div>
+      <div style="display:flex;gap:10px">
+        <button class="login-btn" style="flex:1;background:var(--teal-dim);border:1px solid var(--teal);color:var(--teal-light)" onclick="enterAs('Di')">👑 Di</button>
+        <button class="login-btn" style="flex:1;background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold-light)" onclick="enterAs('Cat')">🐱 Cat</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">D</div>
+    <div>
+      <div class="logo-text">Done by Di</div>
+      <div class="logo-sub">Social Media Hub</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="user-badge" id="user-badge"></div>
+    <button class="btn btn-teal di-only" id="add-post-btn" onclick="openModal('post')">+ New Post</button>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Log out</button>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('dashboard',this)">Dashboard</div>
+  <div class="tab" onclick="switchTab('calendar',this)">Calendar</div>
+  <div class="tab" onclick="switchTab('checklist',this)">Checklists</div>
+  <div class="tab" onclick="switchTab('canva',this)">Canva Assets</div>
+  <div class="tab" onclick="switchTab('queue',this)">Post Queue <span class="badge-count" id="queue-badge">0</span></div>
+</div>
+
+<main>
+
+  <!-- ── DASHBOARD ── -->
+  <div id="view-dashboard" class="view active">
+    <div class="section-head">
+      <div>
+        <div class="section-title" id="dash-greeting">Welcome back!</div>
+        <div class="section-sub" id="dash-sub">Loading...</div>
+      </div>
+    </div>
+    <div class="dash-grid">
+      <div class="stat-card"><div class="stat-label">Posts This Month</div><div class="stat-value" style="color:var(--teal-light)" id="stat-posts">—</div><div class="stat-note" id="stat-posts-note"> </div></div>
+      <div class="stat-card"><div class="stat-label">Pending Drafts</div><div class="stat-value" style="color:var(--gold)" id="stat-drafts">—</div><div class="stat-note" id="stat-drafts-note"> </div></div>
+      <div class="stat-card"><div class="stat-label">Checklist Items Left</div><div class="stat-value" style="color:#6DD68A" id="stat-checks">—</div><div class="stat-note" id="stat-checks-note"> </div></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="cl-section-label" style="color:var(--teal-light)">Upcoming Posts</div>
+        <div class="post-list" id="dash-posts"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.25rem">
+        <div class="card">
+          <div class="cl-section-label" style="color:var(--gold-light)">Today's Tasks</div>
+          <div class="cl-items" id="dash-tasks"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+        </div>
+        <div class="card">
+          <div class="cl-section-label" style="color:var(--teal-light)">Quick Notes</div>
+          <div class="note-list" id="dash-notes"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+          <div class="di-only" style="margin-top:10px">
+            <button class="cl-add" onclick="openModal('note')">+ Add Note</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CALENDAR ── -->
+  <div id="view-calendar" class="view">
+    <div class="section-head">
+      <div><div class="section-title">Content Calendar</div><div class="section-sub">Click any day to view or add scheduled posts</div></div>
+      <button class="btn btn-teal di-only" onclick="openModal('post')">+ Schedule Post</button>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="cal-header">
+          <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+            <div class="cal-month" id="cal-month-label">—</div>
+            <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+          </div>
+          <div style="display:flex;gap:10px;font-size:11px;align-items:center">
+            <span style="display:flex;align-items:center;gap:4px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:50%;background:var(--gold);display:inline-block"></span>Has post</span>
+            <span style="display:flex;align-items:center;gap:4px;color:var(--muted)"><span style="width:7px;height:7px;border-radius:50%;background:var(--teal);display:inline-block"></span>Today</span>
+          </div>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="card" id="day-panel">
+        <div class="cl-section-label" style="color:var(--gold-light)" id="day-panel-date">Select a day</div>
+        <div id="day-panel-content" style="color:var(--muted);font-size:13px;padding:0.5rem 0">Click any day to see scheduled posts.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CHECKLISTS ── -->
+  <div id="view-checklist" class="view">
+    <div class="section-head">
+      <div><div class="section-title">Weekly Checklists</div><div class="section-sub">Recurring SOPs for Di & Cat · Resets weekly</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="resetWeeklyChecks()">Reset Week</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+      <div class="card">
+        <div class="cl-section-label" style="color:var(--teal-light)">Di's Weekly SOP</div>
+        <div class="cl-items" id="di-checklist"></div>
+        <button class="cl-add di-only" onclick="addCheckItem('Di')">+ Add task to Di's list</button>
+        <div class="progress-bar"><div class="progress-fill" id="di-bar" style="width:0%"></div></div>
+        <div class="progress-label" id="di-label">Loading...</div>
+      </div>
+      <div class="card">
+        <div class="cl-section-label" style="color:var(--gold-light)">Cat's Weekly SOP</div>
+        <div class="cl-items" id="cat-checklist"></div>
+        <button class="cl-add di-only" onclick="addCheckItem('Cat')">+ Add task to Cat's list</button>
+        <div class="progress-bar"><div class="progress-fill" id="cat-bar" style="width:0%;background:linear-gradient(90deg,var(--gold),var(--gold-light))"></div></div>
+        <div class="progress-label" id="cat-label">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CANVA ASSETS ── -->
+  <div id="view-canva" class="view">
+    <div class="section-head">
+      <div><div class="section-title">Canva Asset Library</div><div class="section-sub">Linked templates · Click to open in Canva</div></div>
+      <button class="btn btn-gold di-only" onclick="openModal('canva')">+ Link Canva Design</button>
+    </div>
+    <div class="canva-grid" id="canva-grid"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+  </div>
+
+  <!-- ── POST QUEUE ── -->
+  <div id="view-queue" class="view">
+    <div class="section-head">
+      <div><div class="section-title">Post Queue</div><div class="section-sub">All posts across platforms</div></div>
+      <div style="display:flex;gap:8px">
+        <select class="form-select" style="padding:6px 10px;font-size:12px;width:auto" id="queue-filter" onchange="renderQueue()">
+          <option value="all">All Statuses</option>
+          <option value="draft">Draft</option>
+          <option value="ready">Ready</option>
+          <option value="published">Published</option>
+        </select>
+        <button class="btn btn-teal di-only" onclick="openModal('post')">+ Add Post</button>
+      </div>
+    </div>
+    <div class="card"><div class="post-list" id="full-queue"></div></div>
+  </div>
+
+</main>
+</div>
+
+<!-- ── MODALS ── -->
+
+<!-- Post Modal -->
+<div class="modal-overlay" id="modal-post" onclick="closeModalOutside(event,'modal-post')">
+  <div class="modal">
+    <div class="modal-title" id="post-modal-title">Schedule New Post</div>
+    <input type="hidden" id="edit-post-id">
+    <div class="form-row"><label class="form-label">Post Title</label><input class="form-input" id="f-title" placeholder="e.g. VA Newbies — Weekly tip"></div>
+    <div class="form-row"><label class="form-label">Caption / Copy</label><textarea class="form-textarea" id="f-caption" placeholder="Paste the post copy here..."></textarea></div>
+    <div class="form-row-2">
+      <div><label class="form-label">Platform</label>
+        <select class="form-select" id="f-platform">
+          <option>Facebook Page</option><option>Facebook Group</option><option>Instagram</option><option>Threads</option><option>LinkedIn</option>
+        </select>
+      </div>
+      <div><label class="form-label">Assign To</label>
+        <select class="form-select" id="f-assign"><option>Di</option><option>Cat</option></select>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div><label class="form-label">Date</label><input class="form-input" type="date" id="f-date"></div>
+      <div><label class="form-label">Status</label>
+        <select class="form-select" id="f-status"><option value="draft">Draft</option><option value="ready">Ready</option><option value="published">Published</option></select>
+      </div>
+    </div>
+    <div class="form-row"><label class="form-label">Canva Link (optional)</label><input class="form-input" type="text" id="f-canva" placeholder="https://www.canva.com/design/..."></div>
+    <div class="form-row"><label class="form-label">Notes for Cat</label><textarea class="form-textarea" id="f-notes" placeholder="Any instructions or context..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-post')">Cancel</button>
+      <button class="btn btn-teal" onclick="savePost()">Save Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- Note Modal -->
+<div class="modal-overlay" id="modal-note" onclick="closeModalOutside(event,'modal-note')">
+  <div class="modal">
+    <div class="modal-title">Add Quick Note</div>
+    <div class="form-row"><label class="form-label">Note Content</label><textarea class="form-textarea" id="n-content" placeholder="e.g. FB Page and FB Group must never be mixed..."></textarea></div>
+    <div class="form-row"><label class="form-label">Color</label>
+      <select class="form-select" id="n-color"><option value="teal">Teal (Info)</option><option value="gold">Gold (Reminder)</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-note')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Canva Modal -->
+<div class="modal-overlay" id="modal-canva" onclick="closeModalOutside(event,'modal-canva')">
+  <div class="modal">
+    <div class="modal-title">Link Canva Design</div>
+    <div class="form-row"><label class="form-label">Design Name</label><input class="form-input" id="ca-name" placeholder="e.g. VA Newbies IG Story Template"></div>
+    <div class="form-row"><label class="form-label">Canva Share Link</label><input class="form-input" id="ca-url" placeholder="https://www.canva.com/design/..."></div>
+    <div class="form-row-2">
+      <div><label class="form-label">Dimensions / Size</label><input class="form-input" id="ca-dim" placeholder="e.g. 1080x1920"></div>
+      <div><label class="form-label">Emoji Icon</label><input class="form-input" id="ca-emoji" placeholder="🎨" maxlength="4"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-canva')">Cancel</button>
+      <button class="btn btn-gold" onclick="saveCanva()">Save Asset</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── CONFIG — REPLACE WITH YOUR SUPABASE DETAILS ──────────────
+const SUPABASE_URL = 'https://tcnjjxwzmdtugtigfcum.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbmpqeHd6bWR0dWd0aWdmY3VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MzMwNzAsImV4cCI6MjA5MzQwOTA3MH0.3w_MNVrCowtme6GXOOdLhIGj6ojuSOILnVPAx02BRrU';
+
+// ── PASSWORD ──────────────────────────────────────────────────
+// Change this to your actual shared password
+const SHARED_PASSWORD = 'donebydi2026';
+
+// ── INIT ─────────────────────────────────────────────────────
+let sb = null;
+let currentUser = null;
+let allPosts = [];
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selectedCalDay = null;
+
+// ── AUTH ──────────────────────────────────────────────────────
+function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  const err = document.getElementById('login-err');
+  if (pw === SHARED_PASSWORD) {
+    err.style.display = 'none';
+    document.getElementById('step-pw').style.display = 'none';
+    document.getElementById('step-who').style.display = 'block';
+  } else {
+    err.style.display = 'block';
+    document.getElementById('pw-input').value = '';
+  }
+}
+
+function enterAs(name) {
+  currentUser = name;
+  // Init Supabase now that we know who's logging in
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch(e) {
+    console.warn('Supabase init failed:', e);
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pw-input').value = '';
+}
+
+// ── ROLE-BASED UI ─────────────────────────────────────────────
+function applyRoleUI() {
+  const badge = document.getElementById('user-badge');
+  if (currentUser === 'Di') {
+    badge.textContent = '👑 Di (Admin)';
+    badge.className = 'user-badge badge-di';
+    document.querySelectorAll('.di-only').forEach(el => el.style.display = '');
+  } else {
+    badge.textContent = '🐱 Cat (Assistant)';
+    badge.className = 'user-badge badge-cat';
+    document.querySelectorAll('.di-only').forEach(el => el.style.display = 'none');
+  }
+}
+
+// ── APP INIT ──────────────────────────────────────────────────
+async function initApp() {
+  applyRoleUI();
+  const today = new Date();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('dash-greeting').textContent = `Welcome back, ${currentUser} 👋`;
+  document.getElementById('dash-sub').textContent = `${monthNames[today.getMonth()]} ${today.getFullYear()} · ${today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}`;
+  if (sb) {
+    await loadAll();
+  } else {
+    // Supabase not configured yet — show empty state
+    document.getElementById('dash-posts').innerHTML = '<div style="color:var(--gold);font-size:13px;padding:1rem 0">⚠️ Add your Supabase URL and key to the file to enable live data.</div>';
+    document.getElementById('dash-tasks').innerHTML = '<div style="color:var(--muted);font-size:13px">Configure Supabase to load tasks.</div>';
+    document.getElementById('dash-notes').innerHTML = '';
+    renderCalendar();
+  }
+}
+
+async function loadAll() {
+  await Promise.all([loadPosts(), loadChecklists(), loadNotes(), loadCanva()]);
+  updateStats();
+  renderCalendar();
+}
+
+// ── POSTS ─────────────────────────────────────────────────────
+async function loadPosts() {
+  const {data} = await sb.from('posts').select('*').order('scheduled_date');
+  allPosts = data || [];
+  renderDashPosts();
+  renderQueue();
+  updateQueueBadge();
+  if (selectedCalDay) showDayPanel(selectedCalDay);
+}
+
+function renderDashPosts() {
+  const el = document.getElementById('dash-posts');
+  const today = new Date().toISOString().split('T')[0];
+  const upcoming = allPosts.filter(p => p.scheduled_date >= today && p.status !== 'published').slice(0,5);
+  if (!upcoming.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:0.5rem 0">No upcoming posts.</div>'; return; }
+  el.innerHTML = upcoming.map(p => postItemHTML(p, true)).join('');
+}
+
+function renderQueue() {
+  const el = document.getElementById('full-queue');
+  const filter = document.getElementById('queue-filter').value;
+  let posts = filter === 'all' ? allPosts : allPosts.filter(p => p.status === filter);
+  if (!posts.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:1rem 0;text-align:center">No posts found.</div>'; return; }
+  el.innerHTML = posts.map(p => postItemHTML(p, false)).join('');
+}
+
+function postItemHTML(p, compact) {
+  const d = new Date(p.scheduled_date + 'T00:00:00');
+  const day = d.getDate();
+  const mo = d.toLocaleString('en-US',{month:'short'});
+  const platClass = {
+    'Facebook Page': 'plat-fb', 'Facebook Group': 'plat-fb',
+    'Instagram': 'plat-ig', 'Threads': 'plat-th', 'LinkedIn': 'plat-li'
+  }[p.platform] || 'plat-fb';
+  const assignClass = p.assigned_to === 'Di' ? 'assign-di' : 'assign-cat';
+  const actions = currentUser === 'Di' ? `
+    <button class="btn btn-sm btn-ghost" onclick="editPost('${p.id}')">Edit</button>
+    <button class="btn btn-sm btn-danger" onclick="deletePost('${p.id}')">✕</button>
+  ` : (p.canva_link ? `<a href="${p.canva_link}" target="_blank" class="btn btn-sm btn-ghost">Canva ↗</a>` : '');
+  return `<div class="post-item">
+    <div class="post-date-badge"><div class="post-date-day">${day}</div><div class="post-date-mo">${mo}</div></div>
+    <div class="post-info">
+      <div class="post-title">${p.title}</div>
+      <div class="post-meta">
+        <span class="plat ${platClass}">${p.platform}</span>
+        <span class="${assignClass}">${p.assigned_to}</span>
+        <span class="status-pill status-${p.status}" onclick="cycleStatus('${p.id}','${p.status}')">${p.status.charAt(0).toUpperCase()+p.status.slice(1)}</span>
+        ${p.notes ? `<span title="${p.notes}" style="cursor:help">📝</span>` : ''}
+      </div>
+    </div>
+    <div class="post-actions">${actions}</div>
+  </div>`;
+}
+
+async function cycleStatus(id, current) {
+  const next = {draft:'ready', ready:'published', published:'draft'}[current];
+  await sb.from('posts').update({status: next, updated_at: new Date().toISOString()}).eq('id', id);
+  toast(`Status → ${next}`);
+  await loadPosts();
+}
+
+async function deletePost(id) {
+  if (!confirm('Delete this post?')) return;
+  await sb.from('posts').delete().eq('id', id);
+  toast('Post deleted');
+  await loadPosts();
+}
+
+function editPost(id) {
+  const p = allPosts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('post-modal-title').textContent = 'Edit Post';
+  document.getElementById('edit-post-id').value = id;
+  document.getElementById('f-title').value = p.title;
+  document.getElementById('f-caption').value = p.caption || '';
+  document.getElementById('f-platform').value = p.platform;
+  document.getElementById('f-assign').value = p.assigned_to;
+  document.getElementById('f-date').value = p.scheduled_date;
+  document.getElementById('f-status').value = p.status;
+  document.getElementById('f-canva').value = p.canva_link || '';
+  document.getElementById('f-notes').value = p.notes || '';
+  openModal('post');
+}
+
+async function savePost() {
+  const id = document.getElementById('edit-post-id').value;
+  const payload = {
+    title: document.getElementById('f-title').value.trim(),
+    caption: document.getElementById('f-caption').value.trim(),
+    platform: document.getElementById('f-platform').value,
+    assigned_to: document.getElementById('f-assign').value,
+    scheduled_date: document.getElementById('f-date').value,
+    status: document.getElementById('f-status').value,
+    canva_link: document.getElementById('f-canva').value.trim() || null,
+    notes: document.getElementById('f-notes').value.trim() || null,
+    updated_at: new Date().toISOString()
+  };
+  if (!payload.title || !payload.scheduled_date) { alert('Title and date are required.'); return; }
+  if (id) {
+    await sb.from('posts').update(payload).eq('id', id);
+    toast('Post updated ✓');
+  } else {
+    await sb.from('posts').insert(payload);
+    toast('Post scheduled ✓');
+  }
+  closeModal('modal-post');
+  clearPostForm();
+  await loadPosts();
+  updateStats();
+}
+
+function clearPostForm() {
+  ['f-title','f-caption','f-canva','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('edit-post-id').value = '';
+  document.getElementById('f-status').value = 'draft';
+  document.getElementById('post-modal-title').textContent = 'Schedule New Post';
+}
+
+function updateQueueBadge() {
+  const drafts = allPosts.filter(p => p.status === 'draft').length;
+  document.getElementById('queue-badge').textContent = drafts;
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────
+function renderCalendar() {
+  const grid = document.getElementById('cal-grid');
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent = `${months[calMonth]} ${calYear}`;
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  grid.innerHTML = days.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+  const first = new Date(calYear, calMonth, 1).getDay();
+  const total = new Date(calYear, calMonth+1, 0).getDate();
+  const today = new Date();
+  const isNow = today.getMonth()===calMonth && today.getFullYear()===calYear;
+  const postDays = new Set(allPosts
+    .filter(p => { const d = new Date(p.scheduled_date+'T00:00:00'); return d.getMonth()===calMonth && d.getFullYear()===calYear; })
+    .map(p => new Date(p.scheduled_date+'T00:00:00').getDate()));
+  for (let i=0;i<first;i++) grid.innerHTML += `<div class="cal-day empty"></div>`;
+  for (let d=1;d<=total;d++) {
+    const cls = ['cal-day', isNow&&today.getDate()===d?'today':'', postDays.has(d)?'has-post':'', selectedCalDay===d?'selected':''].filter(Boolean).join(' ');
+    grid.innerHTML += `<div class="${cls}" onclick="selectCalDay(${d})"><span>${d}</span></div>`;
+  }
+}
+
+function selectCalDay(d) {
+  selectedCalDay = d;
+  renderCalendar();
+  showDayPanel(d);
+}
+
+function showDayPanel(d) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('day-panel-date').textContent = `${months[calMonth]} ${d}, ${calYear}`;
+  const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const posts = allPosts.filter(p => p.scheduled_date === dateStr);
+  const el = document.getElementById('day-panel-content');
+  if (!posts.length) {
+    el.innerHTML = `<p style="color:var(--muted);font-size:13px;padding:0.5rem 0">No posts scheduled.<br><br><button class="btn btn-teal di-only" onclick="openModal('post')">+ Schedule post</button></p>`;
+  } else {
+    el.innerHTML = posts.map(p => postItemHTML(p,true)).join('') +
+      `<button class="btn btn-ghost btn-sm di-only" style="margin-top:10px;width:100%" onclick="openModal('post')">+ Add another</button>`;
+  }
+  if (currentUser !== 'Di') el.querySelectorAll('.di-only').forEach(e=>e.style.display='none');
+}
+
+function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth>11){calMonth=0;calYear++}
+  if (calMonth<0){calMonth=11;calYear--}
+  selectedCalDay = null;
+  renderCalendar();
+  document.getElementById('day-panel-date').textContent = 'Select a day';
+  document.getElementById('day-panel-content').innerHTML = '<div style="color:var(--muted);font-size:13px;padding:0.5rem 0">Click any day to see scheduled posts.</div>';
+}
+
+// ── CHECKLISTS ────────────────────────────────────────────────
+async function loadChecklists() {
+  const weekStart = getWeekStart();
+  const {data} = await sb.from('checklist_items').select('*').eq('week_start', weekStart).order('created_at');
+  const all = data || [];
+  renderChecklist('Di', all.filter(i=>i.list_owner==='Di'), 'di-checklist', 'di-bar', 'di-label');
+  renderChecklist('Cat', all.filter(i=>i.list_owner==='Cat'), 'cat-checklist', 'cat-bar', 'cat-label');
+  // Also update dash tasks
+  renderDashTasks(all);
+}
+
+function renderChecklist(owner, items, listId, barId, labelId) {
+  const el = document.getElementById(listId);
+  if (!items.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">No tasks yet.</div>'; return; }
+  el.innerHTML = items.map(item => `
+    <div class="cl-item ${item.is_done?'done':''}" onclick="toggleCheck('${item.id}',${item.is_done},this)">
+      <div class="cl-checkbox"></div>
+      <div class="cl-text">
+        <div class="cl-title">${item.title}</div>
+        <div class="cl-meta">${item.frequency}</div>
+      </div>
+      ${currentUser==='Di'?`<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteCheckItem('${item.id}')">✕</button>`:''}
+    </div>`).join('');
+  const done = items.filter(i=>i.is_done).length;
+  const pct = items.length ? Math.round(done/items.length*100) : 0;
+  document.getElementById(barId).style.width = pct+'%';
+  document.getElementById(labelId).textContent = `${done} / ${items.length} complete`;
+}
+
+function renderDashTasks(all) {
+  const el = document.getElementById('dash-tasks');
+  const myItems = all.filter(i => i.list_owner === currentUser).slice(0,5);
+  if (!myItems.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">All done!</div>'; return; }
+  el.innerHTML = myItems.map(item => `
+    <div class="cl-item ${item.is_done?'done':''}" onclick="toggleCheck('${item.id}',${item.is_done},this)">
+      <div class="cl-checkbox"></div>
+      <div class="cl-text">
+        <div class="cl-title">${item.title}</div>
+        <div class="cl-meta">${item.frequency}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleCheck(id, isDone, el) {
+  const newDone = !isDone;
+  el.classList.toggle('done');
+  await sb.from('checklist_items').update({is_done: newDone, done_at: newDone ? new Date().toISOString() : null}).eq('id', id);
+  await loadChecklists();
+  updateStats();
+}
+
+async function addCheckItem(owner) {
+  const title = prompt(`New task for ${owner}:`);
+  if (!title?.trim()) return;
+  const freq = prompt('Frequency (e.g. Weekly, Daily, Every Monday):') || 'Weekly';
+  await sb.from('checklist_items').insert({title: title.trim(), list_owner: owner, frequency: freq, week_start: getWeekStart()});
+  toast('Task added ✓');
+  await loadChecklists();
+}
+
+async function deleteCheckItem(id) {
+  if (!confirm('Delete this task?')) return;
+  await sb.from('checklist_items').delete().eq('id', id);
+  await loadChecklists();
+}
+
+async function resetWeeklyChecks() {
+  if (!confirm('Reset all checkboxes for the new week?')) return;
+  const weekStart = getWeekStart();
+  await sb.from('checklist_items').update({is_done: false, done_at: null, week_start: weekStart}).neq('id','00000000-0000-0000-0000-000000000000');
+  toast('Week reset ✓');
+  await loadChecklists();
+}
+
+function getWeekStart() {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().split('T')[0];
+}
+
+// ── NOTES ─────────────────────────────────────────────────────
+async function loadNotes() {
+  const {data} = await sb.from('hub_notes').select('*').order('created_at', {ascending: false});
+  const notes = data || [];
+  const el = document.getElementById('dash-notes');
+  if (!notes.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">No notes yet.</div>'; return; }
+  el.innerHTML = notes.map(n => `
+    <div class="note-item ${n.color}">
+      ${currentUser==='Di'?`<button class="note-del" onclick="deleteNote('${n.id}')">✕</button>`:''}
+      <div class="note-tag" style="color:var(--${n.color}-light)">${n.author} → All</div>
+      ${n.content}
+    </div>`).join('');
+}
+
+async function saveNote() {
+  const content = document.getElementById('n-content').value.trim();
+  if (!content) return;
+  await sb.from('hub_notes').insert({content, author: currentUser, color: document.getElementById('n-color').value});
+  toast('Note saved ✓');
+  closeModal('modal-note');
+  document.getElementById('n-content').value = '';
+  await loadNotes();
+}
+
+async function deleteNote(id) {
+  await sb.from('hub_notes').delete().eq('id', id);
+  toast('Note deleted');
+  await loadNotes();
+}
+
+// ── CANVA ─────────────────────────────────────────────────────
+async function loadCanva() {
+  const {data} = await sb.from('canva_assets').select('*').order('created_at', {ascending: false});
+  const assets = data || [];
+  const grid = document.getElementById('canva-grid');
+  const gradients = [
+    'linear-gradient(135deg,#0D1B2A,#1B9AAA)',
+    'linear-gradient(135deg,#152436,#C9A84C)',
+    'linear-gradient(135deg,#1E3045,#1B9AAA)',
+    'linear-gradient(135deg,#0D1B2A,#C9A84C)',
+    'linear-gradient(135deg,#152436,#1B9AAA)',
+  ];
+  let html = assets.map((a,i) => `
+    <div class="canva-card">
+      <div class="canva-thumb" style="background:${gradients[i%gradients.length]}">${a.emoji||'🎨'}</div>
+      <div class="canva-info">
+        <div class="canva-name">${a.name}</div>
+        <div class="canva-meta">${a.dimensions||''} · ${a.updated_label||'Added'}</div>
+        <div class="canva-actions">
+          <a class="canva-link" href="${a.canva_url}" target="_blank">↗ Open in Canva</a>
+          ${currentUser==='Di'?`<button class="btn btn-sm btn-danger" onclick="deleteCanva('${a.id}')">✕</button>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+  grid.innerHTML = html || '<div style="color:var(--muted);font-size:13px">No assets yet.</div>';
+}
+
+async function saveCanva() {
+  const name = document.getElementById('ca-name').value.trim();
+  const url = document.getElementById('ca-url').value.trim();
+  if (!name || !url) { alert('Name and URL required.'); return; }
+  await sb.from('canva_assets').insert({
+    name, canva_url: url,
+    dimensions: document.getElementById('ca-dim').value.trim() || null,
+    emoji: document.getElementById('ca-emoji').value.trim() || '🎨',
+    updated_label: 'Added now'
+  });
+  toast('Asset linked ✓');
+  closeModal('modal-canva');
+  ['ca-name','ca-url','ca-dim','ca-emoji'].forEach(id => document.getElementById(id).value = '');
+  await loadCanva();
+}
+
+async function deleteCanva(id) {
+  if (!confirm('Remove this asset?')) return;
+  await sb.from('canva_assets').delete().eq('id', id);
+  toast('Asset removed');
+  await loadCanva();
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function updateStats() {
+  const now = new Date();
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  const thisMonth = allPosts.filter(p => p.scheduled_date >= monthStart).length;
+  const drafts = allPosts.filter(p => p.status === 'draft').length;
+  document.getElementById('stat-posts').textContent = thisMonth;
+  document.getElementById('stat-drafts').textContent = drafts;
+  document.getElementById('stat-drafts-note').textContent = drafts > 0 ? 'Need review' : 'All clear ✓';
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────
+function openModal(type) {
+  document.getElementById(`modal-${type}`).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+function closeModalOutside(e, id) {
+  if (e.target.id === id) closeModal(id);
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(id, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'calendar') renderCalendar();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
